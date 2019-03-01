@@ -50,6 +50,19 @@ def get_mpi_args(mpi_executable, compile_argument, link_argument):
     link_args = call_subprocess([mpi_executable, link_argument])
     if compile_args is None:
         return None
+    # openmpi, particularly that shipped with conda, has a tendency to include
+    # the compiler as the first argument.
+    # From something like
+    #   https://github.com/INCF/MUSIC/blob/master/configure.ac
+    # we can see that you can filter this out with sed:
+    # -compile_info | sed -e 's/^[^ ]* //;s/ -c / /'
+    # The key item here is the first entry, which replaces the first entry --
+    # if it does not include a space as its first character -- with nothing.
+    if compile_argument == "-compile_info":
+        if compile_args[0][0] != " ":
+            compile_args = compile_args[1:]
+        if link_args[0][0] != " ":
+            link_args = link_args[1:]
     return compile_args, link_args
 
 # CYTHON_TRACE required for coverage and line_profiler.  Remove for release.
